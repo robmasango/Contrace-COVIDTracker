@@ -29,7 +29,12 @@ if (logToken) {
 }
 
 app.use(function (req, res, next) {
-  res.header('Access-Control-Allow-Origin', process.env['APP_URL'])
+  const allowOrigin = (process.env['NODE_ENV'] === 'development')
+    ? req.headers.origin
+    : process.env['APP_DOMAIN']
+  res.header('Access-Control-Allow-Origin', allowOrigin)
+  res.header('Access-Control-Allow-Credentials', true)
+  res.header('Access-Control-Allow-Methods', 'POST, PUT, GET, OPTIONS, DELETE')
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
   next()
 })
@@ -54,7 +59,7 @@ app.use(flash())
 app.use('/api/', apiRouter)
 app.use('/checkpoint.pdf', publicCheckpointApiRouter)
 app.use('/public/', express.static('landing-public'))
-app.use('/app/static', express.static('app/build/static'))
+app.use('/static', express.static('app/build/static'))
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost/checkpoints', { useNewUrlParser: true })
 const db = mongoose.connection

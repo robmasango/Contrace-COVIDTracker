@@ -1,14 +1,11 @@
 import TrackCovid from 'trackcovid-js'
-import {
-  checkpointKeyLength,
-  serverBaseUrl as defaultServerBaseUrl
-} from 'trackcovid-js/config'
 
 const checkpointsDBKey = 'CHECKPOINTS'
-const serverBaseUrl = defaultServerBaseUrl
-const estimatedDiagnosisDelay = process.env.REACT_APP_ESTIMATED_DX_DELAY_DAYS
-const contactWindowBefore = process.env.REACT_APP_CONTACT_WINDOW_HOURS_BEFORE
-const contactWindowAfter = process.env.REACT_APP_CONTACT_WINDOW_HOURS_AFTER
+const estimatedDiagnosisDelay = Number(process.env.REACT_APP_ESTIMATED_DX_DELAY_DAYS)
+const contactWindowBefore = Number(process.env.REACT_APP_CONTACT_WINDOW_HOURS_BEFORE)
+const contactWindowAfter = Number(process.env.REACT_APP_CONTACT_WINDOW_HOURS_AFTER)
+const checkpointKeyLength = Number(process.env.REACT_APP_CHECKPOINT_KEY_LENGTH)
+const serverBaseUrl = `${process.env.REACT_APP_SERVER_DOMAIN}/api/checkpoints`
 
 function getCheckpoints () {
   const localStorage = window.localStorage
@@ -22,13 +19,13 @@ function setCheckpoints (checkpointsArr) {
 }
 
 const trackCovid = TrackCovid({
-  serverBaseUrl,
   estimatedDiagnosisDelay,
   getCheckpoints,
   setCheckpoints,
   contactWindowBefore,
   contactWindowAfter,
-  checkpointKeyLength
+  checkpointKeyLength,
+  serverBaseUrl
 })
 
 const {

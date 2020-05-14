@@ -3,13 +3,13 @@ const sha256 = require('js-sha256').sha256
 
 function TrackCovid (config) {
   const {
-    serverBaseUrl,
     estimatedDiagnosisDelay,
     getCheckpoints,
     setCheckpoints,
     contactWindowBefore,
     contactWindowAfter,
-    checkpointKeyLength
+    checkpointKeyLength,
+    serverBaseUrl
   } = config
 
   const oneHour = 1000 * 60 * 60

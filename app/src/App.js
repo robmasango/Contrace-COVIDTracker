@@ -30,6 +30,10 @@ import supportedLanguages from './languages'
 
 const oneSecond = 1000
 const pollingTime = 30 * oneSecond
+const checkpointKeyLength = Number(process.env.REACT_APP_CHECKPOINT_KEY_LENGTH)
+const adminDomain = process.env.REACT_APP_ADMIN_DOMAIN
+const serverDomain = process.env.REACT_APP_SERVER_DOMAIN
+const aboutUrl = process.env.REACT_APP_ABOUT_URL
 
 function ListItemLink (props) {
   return <ListItem button component='a' {...props} />
@@ -43,31 +47,51 @@ class App extends React.Component {
       status: false,
       statusLoaded: false,
       isDrawerOpen: false,
-      currentLanguage: i18n.language
+      currentLanguage: i18n.language,
+      urlScanState: undefined
     }
   }
 
   componentDidMount () {
-    this.checkConfirmcode()
-    const updateStatus = async () => {
-      try {
-        const exposureStatus = await API.getExposureStatus()
-        this.setState({ status: exposureStatus, statusLoaded: true })
-      } catch (e) {
-        console.error(e)
-        this.setState({ status: false, statusLoaded: false })
-      }
-    }
-    updateStatus()
-    setInterval(updateStatus, pollingTime)
+    this.checkUrl().then(() => {
+      this.updateStatus()
+      setInterval(this.updateStatus.bind(this), pollingTime)
+    })
   }
 
-  checkConfirmcode () {
+  async checkUrl () {
     const urlParams = new URLSearchParams(window.location.search)
-    const confirmcode = urlParams.get('confirm')
-    if (confirmcode) {
-      this.setState({ currentTab: 'status' })
+    const checkpointKey = urlParams.get('checkpoint')
+    if (checkpointKey) {
+      if (checkpointKey.length === checkpointKeyLength) {
+        try {
+          await API.joinCheckpoint(checkpointKey)
+          this.setState({ urlScanState: 'scan-success' })
+          window.history.replaceState(null, null, window.location.pathname)
+        } catch (e) {
+          console.error(e)
+          this.setState({ urlScanState: 'scan-error' })
+          window.history.replaceState(null, null, window.location.pathname)
+        }
+      } else {
+        this.setState({ urlScanState: 'scan-error' })
+        window.history.replaceState(null, null, window.location.pathname)
+      }
     }
+  }
+
+  async updateStatus () {
+    try {
+      const exposureStatus = await API.getExposureStatus()
+      this.setState({ status: exposureStatus, statusLoaded: true })
+    } catch (e) {
+      console.error(e)
+      this.setState({ status: false, statusLoaded: false })
+    }
+  }
+
+  resetUrlScanState () {
+    this.setState({ urlScanState: undefined })
   }
 
   onChangeTab (event, newVal) {
@@ -88,11 +112,10 @@ class App extends React.Component {
   }
 
   render () {
-    const { currentTab, status, statusLoaded, isDrawerOpen, currentLanguage } = this.state
+    const { currentTab, status, statusLoaded, isDrawerOpen, currentLanguage, urlScanState } = this.state
     const CurrentPage = (currentTab === 'checkpoints')
       ? CheckpointsPage
       : ExposuresPage
-    const aboutUrl = process.env.REACT_APP_ABOUT_URL
 
     return (
       <div>
@@ -116,7 +139,7 @@ class App extends React.Component {
         <Container maxWidth='sm' style={{ marginBottom: 76 }}>
           <Suspense fallback='loading'>
             <StatusAlert status={status} onExposuresTab={currentTab === 'status'} />
-            <CurrentPage status={status} statusLoaded={statusLoaded} />
+            <CurrentPage status={status} statusLoaded={statusLoaded} urlScanState={urlScanState} resetUrlScanState={this.resetUrlScanState.bind(this)} />
             {supportedLanguages.length > 1 && (
               <Container style={{ textAlign: 'center' }}>
                 <div>
@@ -164,13 +187,13 @@ class App extends React.Component {
               </ListItemIcon>
               <ListItemText primary=<Translation>{t => t('menuAboutButton')}</Translation> />
             </ListItemLink>
-            <ListItemLink style={{ width: 250 }} href='/checkpoint' target='_blank'>
+            <ListItemLink style={{ width: 250 }} href={`${serverDomain}/checkpoint`} target='_blank'>
               <ListItemIcon>
                 <RoomIcon />
               </ListItemIcon>
               <ListItemText primary=<Translation>{t => t('menuCheckpointButton')}</Translation> />
             </ListItemLink>
-            <ListItemLink style={{ width: 250 }} href='/admin' target='_blank'>
+            <ListItemLink style={{ width: 250 }} href={`${adminDomain}/admin`} target='_blank'>
               <ListItemIcon>
                 <PersonIcon />
               </ListItemIcon>
